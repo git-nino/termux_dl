@@ -1,68 +1,59 @@
-#!/data/data/com.termux/files/usr/bin/bash
+#!/bin/bash
 
-# --- Termux Setup Script ---
+# --------------------------------------------------------
+#  Termux YT-DLP Installer + MP3/MP4 Aliases
+#  Downloads MP3 → ~/storage/music
+#            MP4 → ~/storage/movies
+# --------------------------------------------------------
 
-# 1. Update and Upgrade
-echo "Starting Termux package update and upgrade..."
+echo "[+] Updating system..."
 pkg update -y && pkg upgrade -y
-echo "Update and upgrade complete."
-echo "---"
 
-# 2. Install Dependencies (Python, yt-dlp, and ffmpeg)
-echo "Installing required packages: python, yt-dlp, and ffmpeg..."
-pkg install python -y
-pip install yt-dlp
-pkg install ffmpeg -y
-echo "Installation complete."
-echo "---"
+echo "[+] Installing required packages..."
+pkg install -y python ffmpeg
 
-# 3. Request Storage Access (Essential for Music Folder)
-echo "Requesting storage permission (necessary for accessing Music folder)..."
+echo "[+] Running: termux-setup-storage"
 termux-setup-storage
-echo "Storage setup complete. You may need to grant permission manually if prompted."
-echo "---"
 
-# 4. Create Shortcut Functions (dl3 and dl4)
+echo "[+] Installing latest yt-dlp..."
+pip install -U yt-dlp
 
-# Define the location for the shortcut script (Termux's profile source directory)
-PROFILE_D="$PREFIX/etc/profile.d"
-SHORTCUT_SCRIPT="$PROFILE_D/yt_shortcuts.sh"
+# Ensure folders exist
+mkdir -p "$HOME/storage/music"
+mkdir -p "$HOME/storage/movies"
 
-echo "Creating custom shortcut script in $SHORTCUT_SCRIPT..."
+# Detect main shell rc file
+RC_FILE="$HOME/.bashrc"
+[ -f "$HOME/.zshrc" ] && RC_FILE="$HOME/.zshrc"
 
-# Note: The 'Music' folder is typically symlinked to '$HOME/storage/music' after running termux-setup-storage
-MUSIC_DIR="$HOME/storage/music"
+echo "[+] Adding aliases to $RC_FILE ..."
 
-# Ensure the profile.d directory exists
-mkdir -p "$PROFILE_D"
+cat << 'EOF' >> "$RC_FILE"
 
-# Write the shortcut functions to the script file
-cat > "$SHORTCUT_SCRIPT" << EOF
-# --- Custom yt-dlp Shortcuts ---
+# -----------------------------------------------------
+#  YT-DLP Quick Aliases for Termux
+# -----------------------------------------------------
 
-# dl3: Download MP3 (audio-only) to the smartphone's Music folder.
-# Usage: dl3 <url>
-dl3() {
-    if [ -z "\$1" ]; then
-        echo "Usage: dl3 <video_url>"
-        return 1
-    fi
-    echo "Downloading MP3 audio to $MUSIC_DIR..."
-    yt-dlp -x --audio-format mp3 -o "$MUSIC_DIR/%(title)s.%(ext)s" "\$1"
+# Download MP3 to Android Music folder
+mp3() {
+    yt-dlp -x --audio-format mp3 \
+        -o "$HOME/storage/music/%(title)s.%(ext)s" "$1"
 }
 
-# dl4: Download MP4 (video + audio) to the smartphone's Music folder.
-# Usage: dl4 <url>
-dl4() {
-    if [ -z "\$1" ]; then
-        echo "Usage: dl4 <video_url>"
-        return 1
-    fi
-    echo "Downloading MP4 video to $MUSIC_DIR..."
-    yt-dlp -f 'bestvideo[ext=mp4]+bestaudio[ext=m4a]/best[ext=mp4]/best' -o "$MUSIC_DIR/%(title)s.%(ext)s" "\$1"
+# Download MP4 to Android Movies folder
+mp4() {
+    yt-dlp -f "bv*[ext=mp4]+ba[ext=m4a]/mp4" \
+        -o "$HOME/storage/movies/%(title)s.%(ext)s" "$1"
 }
+
 EOF
 
-echo "Shortcut script created. Please **restart Termux** or run **source $SHORTCUT_SCRIPT** to use the new commands."
-echo "---"
-echo "Setup complete! You can now use the 'dl3 <url>' and 'dl4 <url>' commands."
+echo "[+] Reloading shell configuration..."
+source "$RC_FILE"
+
+echo ""
+echo "[✔] Setup complete!"
+echo "[✔] Usage examples:"
+echo "    mp3 https://youtube.com/watch?v=XXXX"
+echo "    mp4 https://youtube.com/watch?v=XXXX"
+echo ""
