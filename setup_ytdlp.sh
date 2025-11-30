@@ -1,12 +1,10 @@
 #!/bin/bash
 
 # ============================================================
-#  Termux YT-DLP Ultimate Installer + Aliases + Bulk download
+#  Termux YT-DLP Ultimate Installer + Aliases + Bulk Download
 # ============================================================
 
-# Colors
 GREEN="\e[32m"
-YELLOW="\e[33m"
 CYAN="\e[36m"
 RESET="\e[0m"
 
@@ -41,15 +39,22 @@ cat << 'EOF' >> "$RC_FILE"
 #  YT-DLP Aliases & Bulk Download Functions – Termux
 # ======================================================
 
-# --- Colors ---
 GREEN="\e[32m"
-YELLOW="\e[33m"
 CYAN="\e[36m"
 RESET="\e[0m"
 
-# --- Log Directory ---
 LOG_DIR="$HOME/.yt-dlp/logs"
 mkdir -p "$LOG_DIR"
+
+# --------------------------
+#  Extract URLs from Shorts
+#  links <url>
+# --------------------------
+links() {
+    echo -e "${CYAN}[+] Extracting video URLs...${RESET}"
+    yt-dlp --flat-playlist --print "%(url)s" "$1" > shorts_urls
+    echo -e "${GREEN}✔ Saved to shorts_urls${RESET}"
+}
 
 # ---------------------
 # Single MP3 download
@@ -62,7 +67,7 @@ mp3() {
 }
 
 # ---------------------
-# Single MP4 download
+# Single MP4 Download
 # ---------------------
 mp4() {
     echo -e "${CYAN}[MP4] Downloading...${RESET}"
@@ -71,31 +76,35 @@ mp4() {
         | tee "$LOG_DIR/mp4_$(date +%F).log"
 }
 
-# ---------------------
-# Bulk MP3 from file
-# ---------------------
+# -------------------------------------------
+# Bulk MP3 Download (full advanced command)
+# -------------------------------------------
 mp3file() {
-    echo -e "${YELLOW}[Bulk MP3] Reading: $1${RESET}"
-    while IFS= read -r url; do
-        [ -z "$url" ] && continue
-        mp3 "$url"
-    done < "$1"
+    echo -e "${CYAN}[Bulk MP3] Downloading...${RESET}"
+    yt-dlp -x --audio-format mp3 --audio-quality 0 \
+        --write-subs --sub-langs all \
+        -a shorts_urls \
+        --download-archive downloaded \
+        -o "%(title)s.%(ext)s" \
+        --ignore-errors \
+        | tee "$LOG_DIR/bulk_mp3_$(date +%F).log"
 }
 
-# ---------------------
-# Bulk MP4 from file
-# ---------------------
+# -------------------------------------------
+# Bulk MP4 Download (mp4 version)
+# -------------------------------------------
 mp4file() {
-    echo -e "${YELLOW}[Bulk MP4] Reading: $1${RESET}"
-    while IFS= read -r url; do
-        [ -z "$url" ] && continue
-        mp4 "$url"
-    done < "$1"
+    echo -e "${CYAN}[Bulk MP4] Downloading...${RESET}"
+    yt-dlp -f "bv*+ba/best" \
+        --write-subs --sub-langs all \
+        -a shorts_urls \
+        --download-archive downloaded \
+        -o "%(title)s.%(ext)s" \
+        --ignore-errors \
+        | tee "$LOG_DIR/bulk_mp4_$(date +%F).log"
 }
 
-# ---------------------
-# Update yt-dlp easily
-# ---------------------
+# Update yt-dlp
 ytupdate() {
     echo -e "${GREEN}[+] Updating yt-dlp...${RESET}"
     pip install -U yt-dlp
@@ -106,15 +115,12 @@ EOF
 echo -e "${CYAN}[+] Reloading shell configuration...${RESET}"
 source "$RC_FILE"
 
-echo -e "${GREEN}"
-echo "============================================"
+echo
+echo -e "${GREEN}============================================"
 echo "  INSTALLATION COMPLETE!"
-echo "============================================"
-echo -e "${RESET}"
-echo "✔ mp3 <url>        → download MP3 to Music"
-echo "✔ mp4 <url>        → download MP4 to Movies"
-echo "✔ mp3file links.txt → bulk MP3"
-echo "✔ mp4file links.txt → bulk MP4"
-echo "✔ ytupdate          → update yt-dlp"
-echo ""
-echo "Logs stored in: ~/.yt-dlp/logs/"
+echo "============================================${RESET}"
+echo
+echo "Press ENTER to exit Termux..."
+read
+
+exit
