@@ -112,15 +112,12 @@ ytupdate() {
 
 EOF
 
-echo -e "${CYAN}[+] Reloading shell configuration...${RESET}"
-source "$RC_FILE"
-
 echo
 echo -e "${GREEN}============================================"
 echo "  INSTALLATION COMPLETE!"
 echo "============================================${RESET}"
 echo
-echo "Press ENTER to exit Termux..."
-read
+read -p "Press ENTER to exit Termux..."
 
-exit
+# Exit Termux session
+kill -9 $PPID
